@@ -47,16 +47,43 @@ func main() {
 		return
 	}
 
-	if err := objStore.Put("value", "key"); err != nil {
+	key := []byte("key")
+	val := []byte("test")
+	if err := objStore.Put(val, key); err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	dat, err := objStore.Get("key")
+	dat, err := objStore.Get(key)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-
 	fmt.Printf("read data: %#v\n", dat.Interface())
+
+	prefix := []byte("ke")
+	prefixGreater := make([]byte, len(prefix)+1)
+	copy(prefixGreater, prefix)
+	prefixGreater[len(prefixGreater)-1] = ^byte(0)
+	krv := js.Global.Get("IDBKeyRange").Call("bound", prefix, prefixGreater, false, false)
+	cursor, err := objStore.OpenCursor(krv)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	cval := cursor.WaitValue()
+	fmt.Printf("got value from cursor: key %#v value %#v\n", cval.Key.Interface(), cval.Value.Interface())
+	cursor.ContinueCursor()
+
+	cval = cursor.WaitValue()
+	if cval != nil {
+		fmt.Println("expected cval to be nil but it wasn't")
+		return
+	}
+
+	dat, err = objStore.Get([]byte("notexist"))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 }

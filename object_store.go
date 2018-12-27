@@ -62,6 +62,22 @@ func (s *ObjectStore) GetAllKeys(query interface{}) (*js.Object, error) {
 }
 
 // Count counts keys matching the optional query.
-func (s *ObjectStore) Count(query interface{}) (*js.Object, error) {
-	return WaitRequest(s.Object.Call("count", query))
+func (s *ObjectStore) Count(query interface{}) (int, error) {
+	v, err := WaitRequest(s.Object.Call("count", query))
+	if err != nil {
+		return 0, err
+	}
+	return v.Int(), nil
+}
+
+// OpenCursor opens a cursor with a optional IDBKeyRange.
+func (s *ObjectStore) OpenCursor(krv *js.Object) (c *Cursor, e error) {
+	defer func() {
+		if err := recover(); err != nil {
+			e, _ = err.(error)
+		}
+	}()
+
+	req := s.Object.Call("openCursor", krv)
+	return NewCursor(req), nil
 }

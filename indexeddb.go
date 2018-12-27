@@ -19,9 +19,14 @@ func GlobalIndexedDB() *IndexedDB {
 	return &IndexedDB{Object: js.Global.Get("indexedDB")}
 }
 
-// Open opens an indexeddb database.
-func (i *IndexedDB) Open(ctx context.Context, name string) (*Database, error) {
-	odbReq := i.Call("open", name)
+// Open opens an indexeddb database with a version and upgrader.
+func (i *IndexedDB) Open(
+	ctx context.Context,
+	name string,
+	version int,
+	upgrader func(d *DatabaseUpdate, oldVersion, newVersion int) error,
+) (*Database, error) {
+	var db *Database
 	errCh := make(chan error, 1)
 	putErr := func(err error) {
 		select {
@@ -29,10 +34,29 @@ func (i *IndexedDB) Open(ctx context.Context, name string) (*Database, error) {
 		default:
 		}
 	}
+	odbReq := i.Call("open", name, version)
+	odbReq.Set("onupgradeneeded", func(event *js.Object) {
+		// event is an IDBVersionChangeEvent
+		oldVersion := event.Get("oldVersion").Int()
+		newVersion := event.Get("newVersion").Int()
+		db = &Database{Object: event.Get("target").Get("result")}
+		if err := upgrader(&DatabaseUpdate{Database: db}, oldVersion, newVersion); err != nil {
+			putErr(err)
+		}
+	})
 	odbReq.Set("onerror", func(o *js.Object) {
-		go putErr(errors.New("cannot open indexeddb"))
+		js.Global.Set("idbError", o)
+		go putErr(errors.New(o.
+			Get("target").
+			Get("error").
+			Get("message").
+			String(),
+		))
 	})
 	odbReq.Set("onsuccess", func(o *js.Object) {
+		if db == nil {
+			db = &Database{Object: o.Get("target").Get("result")}
+		}
 		go putErr(nil)
 	})
 	select {
@@ -44,17 +68,5 @@ func (i *IndexedDB) Open(ctx context.Context, name string) (*Database, error) {
 		}
 	}
 
-	return &Database{Object: odbReq.Get("result")}, nil
+	return db, nil
 }
-
-// OpenWithUpgrader opens an indexeddb database with a version and upgrader.
-/*
-func (i *IndexedDB) OpenWithUpgrader(
-	ctx context.Context,
-	name string,
-	ver int,
-	upgrader func(TODO),
-) (*Database, error) {
-	odbReq := i.Call("open", name)
-}
-*/

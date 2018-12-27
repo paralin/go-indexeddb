@@ -10,8 +10,6 @@ import (
 type Database struct {
 	// Object is the database js object.
 	*js.Object
-
-	// name is the database name
 }
 
 // NewDatabase constructs a database with a js object.
@@ -27,6 +25,11 @@ func (d *Database) GetName() string {
 // GetVersion returns the database version.
 func (d *Database) GetVersion() int {
 	return d.Get("version").Int()
+}
+
+// ContainsObjectStore checks if the db has a object store by id.
+func (d *Database) ContainsObjectStore(id string) bool {
+	return d.Object.Get("objectStoreNames").Call("contains", id).Bool()
 }
 
 // Close closes the database.

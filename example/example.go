@@ -1,10 +1,9 @@
-//+build js
-
 package main
 
 import (
 	"context"
 	"fmt"
+
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/paralin/go-indexeddb"
 )

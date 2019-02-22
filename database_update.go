@@ -1,9 +1,8 @@
-//+build js
-
 package indexeddb
 
 import (
 	"errors"
+
 	"github.com/gopherjs/gopherjs/js"
 )
 

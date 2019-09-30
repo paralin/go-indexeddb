@@ -3,15 +3,15 @@ package indexeddb
 import (
 	"errors"
 
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 // WaitRequest waits for an IDBRequest.
 // Registers onsuccess and onerror
-func WaitRequest(obj *js.Object) (*js.Object, error) {
-	ret := func() (*js.Object, error) {
+func WaitRequest(obj js.Value) (js.Value, error) {
+	ret := func() (js.Value, error) {
 		var err error
-		if o := obj.Get("error"); o != nil && o != js.Undefined {
+		if o := obj.Get("error"); o.Truthy() {
 			err = errors.New(o.Get("message").String())
 		}
 		return obj.Get("result"), err
@@ -26,13 +26,15 @@ func WaitRequest(obj *js.Object) (*js.Object, error) {
 		default:
 		}
 	}
-	obj.Set("onsuccess", func(e *js.Object) {
+	obj.Set("onerror", func(th js.Value, dats []js.Value) interface{} {
 		rerr()
+		return nil
 	})
-	obj.Set("onerror", func(e *js.Object) {
+	obj.Set("onsuccess", func(th js.Value, dats []js.Value) interface{} {
 		rerr()
+		return nil
 	})
-	js.Global.Set("waitTransaction", obj)
+	js.Global().Set("waitTransaction", obj)
 	<-errCh
 	return ret()
 }

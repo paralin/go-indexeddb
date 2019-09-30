@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/paralin/go-indexeddb"
+	"syscall/js"
 )
 
 func main() {

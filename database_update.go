@@ -3,7 +3,7 @@ package indexeddb
 import (
 	"errors"
 
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 // DatabaseUpdate is a database during the updateneeded callback.
@@ -13,22 +13,28 @@ type DatabaseUpdate struct {
 
 // CreateObjectStoreOpts are the options for creating an object store.
 type CreateObjectStoreOpts struct {
-	*js.Object
+	val js.Value
 
-	// KeyPath is the key path.
-	KeyPath string `js:"keyPath"`
+	// keyPath is the key path.
+	keyPath string
 	// AutoIncrement if set
-	AutoIncrement bool `js:"autoIncrement"`
+	autoIncrement bool
 }
 
 // NewCreateObjectStoreOpts constructs the options for CreateObjectStore.
 func NewCreateObjectStoreOpts(keyPath string, autoIncrement bool) *CreateObjectStoreOpts {
-	o := &CreateObjectStoreOpts{
-		Object: js.Global.Get("Object").New(),
+	return &CreateObjectStoreOpts{
+		keyPath:       keyPath,
+		autoIncrement: autoIncrement,
 	}
-	o.KeyPath = keyPath
-	o.AutoIncrement = autoIncrement
-	return o
+}
+
+// ToJSValue converts the object to a js value.
+func (o *CreateObjectStoreOpts) ToJSValue() js.Value {
+	val := js.Global().Get("Object").New()
+	val.Set("keyPath", o.keyPath)
+	val.Set("autoIncrement", o.autoIncrement)
+	return val
 }
 
 // CreateObjectStore creates an object store.
@@ -51,8 +57,8 @@ func (d *DatabaseUpdate) CreateObjectStore(
 
 	args := []interface{}{id}
 	if opts != nil {
-		args = append(args, opts)
+		args = append(args, opts.ToJSValue())
 	}
-	d.Object.Call("createObjectStore", args...)
+	d.Database.val.Call("createObjectStore", args...)
 	return nil
 }

@@ -1,15 +1,17 @@
+// +build js,!wasm
+
 package indexeddb
 
-import "syscall/js"
+import "github.com/gopherjs/gopherjs/js"
 
 // Bound builds a new IDBKeyRange with the range.
-func Bound(lower, upper interface{}, lowerOpen, upperOpen bool) js.Value {
-	return js.Global().
+func Bound(lower, upper interface{}, lowerOpen, upperOpen bool) *js.Object {
+	return js.Global.
 		Get("IDBKeyRange").
 		Call(
 			"bound",
-			MaybeConvertValueToJs(lower),
-			MaybeConvertValueToJs(upper),
+			lower,
+			upper,
 			lowerOpen,
 			upperOpen,
 		)
@@ -17,23 +19,15 @@ func Bound(lower, upper interface{}, lowerOpen, upperOpen bool) js.Value {
 
 // MaybeConvertValueToJs conditionally converts val to javascript.
 func MaybeConvertValueToJs(val interface{}) interface{} {
-	switch vb := val.(type) {
-	case []byte:
-		return CopyByteSliceToJs(vb)
-	}
 	return val
 }
 
 // CopyByteSliceToJS copies a byte slice to javascript.
-func CopyByteSliceToJs(vb []byte) js.Value {
-	vba := js.Global().Get("Uint8Array").New(len(vb))
-	js.CopyBytesToJS(vba, vb)
-	return vba
+func CopyByteSliceToJs(vb []byte) *js.Object {
+	return js.MakeWrapper(vb)
 }
 
 // CopyByteSliceFromJS copies a byte slice from javascript.
-func CopyByteSliceFromJs(vb js.Value) []byte {
-	b := make([]byte, vb.Length())
-	js.CopyBytesToGo(b, vb)
-	return b
+func CopyByteSliceFromJs(vb *js.Object) []byte {
+	return vb.Interface().([]byte)
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gopherjs/gopherjs/js"
 	"github.com/paralin/go-indexeddb"
-	"syscall/js"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 		fmt.Println("error opening database: " + err.Error())
 		return
 	}
-	js.Global().Set("openedDatabase", db.GetJsValue())
+	js.Global.Set("openedDatabase", db)
 	fmt.Println("opened database")
 
 	tx, err := db.Transaction([]string{id}, indexeddb.READWRITE)
@@ -40,7 +40,6 @@ func main() {
 		return
 	}
 
-	js.Global().Set("openedTransaction", tx.GetJsValue())
 	objStore, err := tx.GetObjectStore(id)
 	if err != nil {
 		fmt.Println("error getting obj store: " + err.Error())
@@ -59,26 +58,20 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Printf("read data: %v\n", dat.String())
+	fmt.Printf("read data: %#v\n", dat.Interface())
 
 	prefix := []byte("ke")
 	prefixGreater := make([]byte, len(prefix)+1)
 	copy(prefixGreater, prefix)
 	prefixGreater[len(prefixGreater)-1] = ^byte(0)
-	krv := indexeddb.Bound(prefix, prefixGreater, false, false)
+	krv := js.Global.Get("IDBKeyRange").Call("bound", prefix, prefixGreater, false, false)
 	cursor, err := objStore.OpenCursor(krv)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	cval := cursor.WaitValue()
-	cvalKey := indexeddb.CopyByteSliceFromJs(cval.Key)
-	cvalVal := indexeddb.CopyByteSliceFromJs(cval.Value)
-	fmt.Printf(
-		"got value from cursor: key %#v value %#v\n",
-		string(cvalKey),
-		string(cvalVal),
-	)
+	fmt.Printf("got value from cursor: key %#v value %#v\n", cval.Key.Interface(), cval.Value.Interface())
 	cursor.ContinueCursor()
 
 	cval = cursor.WaitValue()

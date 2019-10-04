@@ -1,20 +1,20 @@
-// +build js,!wasm
+// +build js,wasm
 
 package indexeddb
 
 import (
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/pkg/errors"
+	"syscall/js"
 )
 
 // Transaction is a database transaction.
 type Transaction struct {
-	// Object is the database js object.
-	*js.Object
+	val js.Value
 }
 
 // GetMode returns the transaction mode.
 func (t *Transaction) GetMode() TransactionMode {
-	return TransactionMode(t.Object.Get("mode").String())
+	return TransactionMode(t.val.Get("mode").String())
 }
 
 // GetObjectStore returns a object store.
@@ -25,11 +25,19 @@ func (t *Transaction) GetObjectStore(id string) (o *ObjectStore, e error) {
 		}
 	}()
 
-	s := t.Object.Call("objectStore", id)
-	return &ObjectStore{Object: s}, nil
+	s := t.val.Call("objectStore", id)
+	if !s.Truthy() {
+		return nil, errors.Errorf("GetObjectStore(%s) returned nil", id)
+	}
+	return &ObjectStore{val: s}, nil
+}
+
+// GetJsValue returns the underlying js database handle.
+func (t *Transaction) GetJsValue() js.Value {
+	return t.val
 }
 
 // Abort aborts a transaction.
 func (t *Transaction) Abort() {
-	t.Object.Call("abort")
+	t.val.Call("abort")
 }

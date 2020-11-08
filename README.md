@@ -8,11 +8,45 @@ Check out the example:
 
 ```go
 import (
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/paralin/go-indexeddb"
 )
 
 db, err := indexeddb.GlobalIndexedDB().Open(ctx, "test-db")
+
+ver := 3
+id := "testObjectStore"
+db, err := indexeddb.GlobalIndexedDB().Open(
+	ctx,
+	"test-db",
+	ver,
+	func(d *indexeddb.DatabaseUpdate, oldVersion, newVersion int) error {
+		if !d.ContainsObjectStore(id) {
+			if err := d.CreateObjectStore(id, nil); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
+)
+
+tx, err := db.Transaction([]string{id}, indexeddb.READWRITE)
+objStore, err := tx.GetObjectStore(id)
+
+key := []byte("key")
+val := []byte("test")
+objStore.Put(val, key)
+dat, err := objStore.Get(key)
+
+prefix := []byte("ke")
+prefixGreater := make([]byte, len(prefix)+1)
+copy(prefixGreater, prefix)
+prefixGreater[len(prefixGreater)-1] = ^byte(0)
+krv := js.Global.Get("IDBKeyRange").Call("bound", prefix, prefixGreater, false, false)
+
+cursor, err := objStore.OpenCursor(krv)
+cval := cursor.WaitValue()
+cursor.ContinueCursor()
+cval = cursor.WaitValue()
 ```
 
 ## Transactions expiring

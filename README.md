@@ -1,6 +1,6 @@
 # IndexedDB
 
-> Basic IndexedDB bindings for GopherJS.
+> Bindings for Go to IndexedDB for WebAssembly and GopherJS.
 
 ## Getting Started
 

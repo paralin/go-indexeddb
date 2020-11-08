@@ -71,10 +71,15 @@ func (t *DurableTransaction) restartTransaction() error {
 			return err
 		}
 		stor.store = nstor
-		for _, op := range stor.ops {
+		ops := stor.ops
+		for i, op := range ops {
 			if err := op.apply(nstor); err != nil {
 				return err
 			}
+			stor.ops = ops[i+1:] // don't apply again if successful
+		}
+		if len(stor.ops) == 0 {
+			stor.ops = nil
 		}
 	}
 	t.txn = txn
@@ -98,6 +103,25 @@ func (t *DurableTransaction) Abort() {
 // Commit commits a transaction and waits for it to complete
 func (t *DurableTransaction) Commit() error {
 	var err error
+	attempts := 0
+	// force restart txn for commit
+	for t.txn == nil {
+		attempts++
+		if attempts > 10 {
+			if err == nil {
+				err = errors.New("unable to restart transaction without it going inactive")
+			}
+			return err
+		}
+		// restartTransaction also flushes all pending ops.
+		if err = t.restartTransaction(); err != nil {
+			if errIsInactiveTransaction(err) {
+				continue
+			} else {
+				return err
+			}
+		}
+	}
 	if t.txn != nil {
 		t.txn.Commit()
 		err = t.txn.WaitComplete()
@@ -169,12 +193,15 @@ func (s *DurableObjectStore) pushOp(op *durableOp) error {
 			s.tx.txn = nil
 			s.store = nil
 			err = nil
+			// defer applying the op until Commit() or a read
+			s.ops = append(s.ops, op)
 		}
 		if err != nil {
 			return err
 		}
+	} else {
+		s.ops = append(s.ops, op)
 	}
-	s.ops = append(s.ops, op)
 	return nil
 }
 

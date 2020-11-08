@@ -25,10 +25,15 @@ After the transaction expires, all requests will panic / return an error -
 This unfortunately happens quite frequently with the Go implementation of the
 IndexedDB client in this library, because the Go wasm and/or GopherJS
 implementations frequently unwind the stack to the event loop when switching
-goroutines. To fix this, the IndexedDB code in this library takes the extra step
-of storing all pending changes in an in-memory write-ahead-log. If the
-transaction "goes inactive," the code will re-start the transaction and re-play
-all previous actions from the log.
+goroutines. The code will also sometimes panic if the Js code throws any errors.
+
+The IndexedDB code in this library tries to be as minimal of a wrapper around
+the underlying JavaScript implementations as possible. As such, the fix for
+these issues is implemented in an additional wrapper. After constructing a
+`Database`, call NewDurableTransaction(db, scope, mode) instead of Transaction.
+If the transaction "goes inactive," it will will re-start the transaction and
+re-play all previous actions from the log, as well as refresh the ObjectStore
+handles in the transaction. It will also handle any panics from the calls.
 
 Reference:
 https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB

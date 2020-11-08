@@ -34,7 +34,6 @@ func WaitRequest(obj *js.Object) (*js.Object, error) {
 	obj.Set("onerror", func(e *js.Object) {
 		rerr()
 	})
-	js.Global.Set("waitTransaction", obj)
 	<-errCh
 	return ret()
 }

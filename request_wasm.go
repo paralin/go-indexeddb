@@ -42,7 +42,6 @@ func WaitRequest(obj js.Value) (js.Value, error) {
 			return nil
 		}),
 	)
-	js.Global().Set("waitTransaction", obj)
 	<-errCh
 	return ret()
 }

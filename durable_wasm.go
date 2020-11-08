@@ -95,6 +95,17 @@ func (t *DurableTransaction) Abort() {
 	}
 }
 
+// Commit commits a transaction and waits for it to complete
+func (t *DurableTransaction) Commit() error {
+	var err error
+	if t.txn != nil {
+		t.txn.Commit()
+		err = t.txn.WaitComplete()
+		t.txn = nil
+	}
+	return err
+}
+
 // Restart restarts the transaction if inactive.
 
 // DurableObjectStore backs changes in a write-ahead log.

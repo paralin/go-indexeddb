@@ -15,6 +15,43 @@ type Transaction struct {
 	abortOnce sync.Once
 }
 
+// WaitTransactionComplete waits for oncomplete on a transaction.
+// Registers onsuccess and onerror.
+// Returns transaction.error if set, or nil.
+// Call commit before calling this.
+func WaitTransactionComplete(obj js.Value) error {
+	ret := func() error {
+		var err error
+		if o := obj.Get("error"); o.Truthy() {
+			err = errors.New(o.Get("message").String())
+		}
+		return err
+	}
+	errCh := make(chan struct{}, 1)
+	rerr := func() {
+		select {
+		case errCh <- struct{}{}:
+		default:
+		}
+	}
+	obj.Set(
+		"onerror",
+		js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
+			rerr()
+			return nil
+		}),
+	)
+	obj.Set(
+		"oncomplete",
+		js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
+			rerr()
+			return nil
+		}),
+	)
+	<-errCh
+	return ret()
+}
+
 // GetMode returns the transaction mode.
 func (t *Transaction) GetMode() TransactionMode {
 	return TransactionMode(t.val.Get("mode").String())
@@ -40,7 +77,9 @@ func (t *Transaction) GetJsValue() js.Value {
 	return t.val
 }
 
-// Abort aborts a transaction.
+// Abort aborts a transaction, rolling back changes.
+//
+// Note: transactions auto-commit.
 func (t *Transaction) Abort() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -52,4 +91,26 @@ func (t *Transaction) Abort() {
 	t.abortOnce.Do(func() {
 		t.val.Call("abort")
 	})
+}
+
+// Commit forces committing a transaction.
+//
+// Note: transactions auto-commit, abort will roll-back the changes.
+func (t *Transaction) Commit() {
+	defer func() {
+		if err := recover(); err != nil {
+			// ignore error here
+			_ = err
+		}
+	}()
+	t.abortOnce.Do(func() {
+		t.val.Call("commit")
+	})
+}
+
+// WaitComplete waits for the transaction to complete.
+// Call commit() first.
+// Returns any error if set on the transaction.
+func (t *Transaction) WaitComplete() error {
+	return WaitTransactionComplete(t.val)
 }

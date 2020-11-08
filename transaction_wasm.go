@@ -3,13 +3,16 @@
 package indexeddb
 
 import (
-	"github.com/pkg/errors"
+	"sync"
 	"syscall/js"
+
+	"github.com/pkg/errors"
 )
 
 // Transaction is a database transaction.
 type Transaction struct {
-	val js.Value
+	val       js.Value
+	abortOnce sync.Once
 }
 
 // GetMode returns the transaction mode.
@@ -39,5 +42,14 @@ func (t *Transaction) GetJsValue() js.Value {
 
 // Abort aborts a transaction.
 func (t *Transaction) Abort() {
-	t.val.Call("abort")
+	defer func() {
+		if err := recover(); err != nil {
+			// ignore error here
+			// Failed to execute 'abort' on 'IDBTransaction': The transaction has finished.
+			_ = err
+		}
+	}()
+	t.abortOnce.Do(func() {
+		t.val.Call("abort")
+	})
 }

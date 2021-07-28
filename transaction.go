@@ -3,6 +3,7 @@
 package indexeddb
 
 import (
+	"errors"
 	"github.com/gopherjs/gopherjs/js"
 )
 

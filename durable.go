@@ -1,4 +1,4 @@
-//+build js,wasm
+// +build !js
 
 package indexeddb
 

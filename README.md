@@ -9,23 +9,23 @@ Check out the [example](./example/example.go).
 Sample:
 
 ```go
-	key := []byte("key")
-	val := []byte("test")
+  key := []byte("key")
+  val := []byte("test")
 
-	err := objStore.Set(key, val)
-	err = objStore.Commit()
+  err := objStore.Set(key, val)
+  err = objStore.Commit()
 
-	data, found, err := objStore.Get(key)
-	if err == nil && !found {
-		err = errors.New("key not found after setting it")
-	}
-    // data contains same data as "val"
+  data, found, err := objStore.Get(key)
+  if err == nil && !found {
+    err = errors.New("key not found after setting it")
+  }
+  // data contains same data as "val"
 
-	prefix := []byte("ke")
-	err = objStore.ScanPrefix(prefix, func(key, val []byte) error {
-		fmt.Printf("got key/value pair: %v => %v\n", key, val)
-		return nil
-	})
+  prefix := []byte("ke")
+  err = objStore.ScanPrefix(prefix, func(key, val []byte) error {
+    fmt.Printf("got key/value pair: %v => %v\n", key, val)
+    return nil
+  })
 ```
 
 ## Transactions expiring

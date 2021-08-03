@@ -4,49 +4,28 @@
 
 ## Getting Started
 
-Check out the example:
+Check out the [example](./example/example.go).
+
+Sample:
 
 ```go
-import (
-	"github.com/paralin/go-indexeddb"
-)
+	key := []byte("key")
+	val := []byte("test")
 
-db, err := indexeddb.GlobalIndexedDB().Open(ctx, "test-db")
+	err := objStore.Set(key, val)
+	err = objStore.Commit()
 
-ver := 3
-id := "testObjectStore"
-db, err := indexeddb.GlobalIndexedDB().Open(
-	ctx,
-	"test-db",
-	ver,
-	func(d *indexeddb.DatabaseUpdate, oldVersion, newVersion int) error {
-		if !d.ContainsObjectStore(id) {
-			if err := d.CreateObjectStore(id, nil); err != nil {
-				return err
-			}
-		}
+	data, found, err := objStore.Get(key)
+	if err == nil && !found {
+		err = errors.New("key not found after setting it")
+	}
+    // data contains same data as "val"
+
+	prefix := []byte("ke")
+	err = objStore.ScanPrefix(prefix, func(key, val []byte) error {
+		fmt.Printf("got key/value pair: %v => %v\n", key, val)
 		return nil
-	},
-)
-
-tx, err := db.Transaction([]string{id}, indexeddb.READWRITE)
-objStore, err := tx.GetObjectStore(id)
-
-key := []byte("key")
-val := []byte("test")
-objStore.Put(val, key)
-dat, err := objStore.Get(key)
-
-prefix := []byte("ke")
-prefixGreater := make([]byte, len(prefix)+1)
-copy(prefixGreater, prefix)
-prefixGreater[len(prefixGreater)-1] = ^byte(0)
-krv := js.Global.Get("IDBKeyRange").Call("bound", prefix, prefixGreater, false, false)
-
-cursor, err := objStore.OpenCursor(krv)
-cval := cursor.WaitValue()
-cursor.ContinueCursor()
-cval = cursor.WaitValue()
+	})
 ```
 
 ## Transactions expiring
@@ -72,6 +51,9 @@ Unfortunately, a transaction "going inactive" will also commit the transaction.
 The "abort" call will "roll-back" the changes made by the transaction. This is a
 fairly weak transaction mechanism and should not be relied upon like a
 traditional transaction system (in BoltDB or similar).
+
+The "Kvtx" implementation has a easy to use get/set API using `[]byte` slices.
+It also implements "ScanPrefix" and "ScanPrefixKeys" for iterating over the db.
 
 Reference:
 https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB

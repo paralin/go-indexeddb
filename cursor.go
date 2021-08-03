@@ -1,45 +1,48 @@
-// +build js,!wasm
+// +build js
 
 package indexeddb
 
 import (
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 // Cursor is a object store cursor.
 type Cursor struct {
-	*js.Object
-
-	lastCursor *js.Object
+	val        js.Value
+	lastCursor js.Value
 	nextCh     chan *CursorValue
 }
 
 // CursorValue is a object store cursor value.
 type CursorValue struct {
-	Key   *js.Object
-	Value *js.Object
+	Key   js.Value
+	Value js.Value
 }
 
 // NewCursor builds a new cursor and registers the onsuccess handler.
-func NewCursor(req *js.Object) *Cursor {
-	c := &Cursor{Object: req}
+func NewCursor(val js.Value) *Cursor {
+	c := &Cursor{val: val}
 	c.nextCh = make(chan *CursorValue, 1)
-	c.Set("onsuccess", func(e *js.Object) {
-		cursor := e.Get("target").Get("result")
-		c.lastCursor = cursor
-		if cursor == nil || cursor == js.Undefined {
-			close(c.nextCh)
-		} else {
-			js.Global.Set("resultDebugCursor", cursor)
-			cv := &CursorValue{
-				Key:   js.Global.Get("Uint8Array").New(cursor.Get("key")),
-				Value: cursor.Get("value"),
+	val.Set("onsuccess", js.FuncOf(
+		func(th js.Value, dats []js.Value) interface{} {
+			cursor := dats[0].Get("target").Get("result")
+			global := js.Global()
+			c.lastCursor = cursor
+			if !cursor.Truthy() {
+				close(c.nextCh)
+			} else {
+				global.Set("resultDebugCursor", cursor)
+				cv := &CursorValue{
+					Key:   global.Get("Uint8Array").New(cursor.Get("key")),
+					Value: cursor.Get("value"),
+				}
+				go func() {
+					c.nextCh <- cv
+				}()
 			}
-			go func() {
-				c.nextCh <- cv
-			}()
-		}
-	})
+			return nil
+		},
+	))
 	return c
 }
 

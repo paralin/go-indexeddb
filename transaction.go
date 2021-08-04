@@ -34,20 +34,12 @@ func WaitTransactionComplete(obj js.Value) error {
 		default:
 		}
 	}
-	obj.Set(
-		"onerror",
-		js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
-			rerr()
-			return nil
-		}),
-	)
-	obj.Set(
-		"oncomplete",
-		js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
-			rerr()
-			return nil
-		}),
-	)
+	cb := js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
+		go rerr()
+		return nil
+	})
+	obj.Set("onerror", cb)
+	obj.Set("oncomplete", cb)
 	<-errCh
 	return ret()
 }

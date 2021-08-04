@@ -4,7 +4,6 @@ package indexeddb
 
 import (
 	"errors"
-
 	"syscall/js"
 )
 
@@ -28,20 +27,12 @@ func WaitRequest(obj js.Value) (js.Value, error) {
 		default:
 		}
 	}
-	obj.Set(
-		"onerror",
-		js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
-			rerr()
-			return nil
-		}),
-	)
-	obj.Set(
-		"onsuccess",
-		js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
-			rerr()
-			return nil
-		}),
-	)
+	cb := js.FuncOf(func(th js.Value, dats []js.Value) interface{} {
+		go rerr()
+		return nil
+	})
+	obj.Set("onerror", cb)
+	obj.Set("onsuccess", cb)
 	<-errCh
 	return ret()
 }

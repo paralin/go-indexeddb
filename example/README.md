@@ -22,3 +22,20 @@ Build the WebAssembly payload and run the server:
 
 Browse to localhost:5000, open the console to view the log messages, and click
 "Run" to start the program.
+
+## Running in Browser with GopherJS
+
+Install the latest gopherjs release:
+
+```sh
+# run in ~
+go install github.com/gopherjs/gopherjs@master
+```
+
+Build the GopherJS payload and run the server:
+
+```sh
+./gopherjs.bash
+```
+
+Browse to http://localhost:8080/github.com/paralin/go-indexeddb/example/

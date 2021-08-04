@@ -131,6 +131,9 @@ func (t *Kvtx) Exists(key []byte) (bool, error) {
 // Commit commits the transaction to storage.
 // Can return an error to indicate tx failure.
 func (t *Kvtx) Commit() error {
+	if t.txn == nil {
+		return nil
+	}
 	return t.txn.Commit()
 }
 
@@ -139,5 +142,7 @@ func (t *Kvtx) Commit() error {
 // Cannot return an error.
 // Can be called unlimited times.
 func (t *Kvtx) Discard() {
-	t.txn.Abort()
+	if txn := t.txn; txn != nil {
+		t.txn.Abort()
+	}
 }

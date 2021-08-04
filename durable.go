@@ -122,10 +122,10 @@ func (t *DurableTransaction) Commit() error {
 			}
 		}
 	}
-	if t.txn != nil {
-		t.txn.Commit()
-		err = t.txn.WaitComplete()
+	if txn := t.txn; txn != nil {
 		t.txn = nil
+		txn.Commit()
+		err = txn.WaitComplete()
 	}
 	return err
 }

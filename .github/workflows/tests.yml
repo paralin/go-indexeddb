@@ -44,5 +44,10 @@ jobs:
         with:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+      - name: Vendor Go
+        run: go mod vendor
       - name: Test Go
         run: go test -v ./...
+        env:
+          GOOS: js
+          GOARCH: wasm

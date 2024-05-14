@@ -1,3 +1,4 @@
+//go:build js
 // +build js
 
 package indexeddb
@@ -311,7 +312,6 @@ func (s *DurableObjectStore) GetAllKeys(query interface{}) (js.Value, error) {
 func (s *DurableObjectStore) Count(query interface{}) (int, error) {
 	var out int
 	_, err := s.durableRead(func(stor *ObjectStore) (js.Value, error) {
-		return stor.GetAllKeys(query)
 		c, err := stor.Count(query)
 		out = c
 		return js.Undefined(), err

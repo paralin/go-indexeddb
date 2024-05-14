@@ -6,11 +6,13 @@
     "group:all",
     "workarounds:all"
   ],
+  "forkProcessing": "enabled",
   "branchConcurrentLimit": 0,
-  "postUpdateOptions": ["gomodMassage"],
-  "packageRules": [{
-    "matchManagers": ["gomod"],
-    "matchDepTypes": ["replace"],
-    "enabled": false
-  }]
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["replace", "toolchain"],
+      "enabled": false
+    }
+  ]
 }

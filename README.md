@@ -2,6 +2,12 @@
 
 > Bindings for Go to IndexedDB for WebAssembly and GopherJS.
 
+## Deprecated
+
+It is recommended to use the [go-indexeddb] library instead.
+
+[go-indexeddb]: https://github.com/aperturerobotics/go-indexeddb
+
 ## Getting Started
 
 Check out the [example](./example/example.go).
